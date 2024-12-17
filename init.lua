@@ -335,8 +335,8 @@ require('lazy').setup({
         FixError = 'Por favor, corrige el siguiente error en el código.',
         BetterNamings = 'Por favor, proporciona mejores nombres para las siguientes variables.',
         Documentation = 'Por favor, proporciona documentación para el siguiente código.',
-        SwaggerApiDocs = 'Please provide documentation for the following API using Swagger.',
-        SwaggerJsDocs = 'Please write JSDoc for the following API using Swagger.',
+        SwaggerApiDocs = 'Por favor, escribe la documentación de Swagger para la siguiente API.',
+        SwaggerJsDocs = 'Por favor, escribe la documentación de Swagger para el siguiente código JS.',
         -- Text related prompts
         Summarize = 'Please summarize the following text.',
         Spelling = 'Please correct any grammar and spelling errors in the following text.',
