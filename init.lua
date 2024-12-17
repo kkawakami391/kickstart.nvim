@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -116,6 +116,22 @@ vim.opt.showmode = false
 --  See `:help 'clipboard'`
 vim.schedule(function()
   vim.opt.clipboard = 'unnamedplus'
+
+  -- Modificacion para agregar compartir clipboard entre el OS y WSL
+  if vim.fn.has 'wsl' == 1 then
+    vim.g.clipboard = {
+      name = 'win32yank-wsl',
+      copy = {
+        ['+'] = 'win32yank.exe -i --crlf',
+        ['*'] = 'win32yank.exe -i --crlf',
+      },
+      paste = {
+        ['+'] = 'win32yank.exe -o --lf',
+        ['*'] = 'win32yank.exe -o --lf',
+      },
+      cache_enabled = 0,
+    }
+  end
 end)
 
 -- Enable break indent
@@ -256,6 +272,145 @@ require('lazy').setup({
     },
   },
 
+  -- NOTE: oil.nvim plugin: Plugin para modificar archivos (crear, borrar, modificar) mas facilmente.
+  {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+
+    -- Optional dependencies
+    -- NOTE: ↓ Activar las dependencias para usar los iconos default del oil.vim
+    --
+    -- dependencies = { { 'echasnovski/mini.icons', opts = {} } },
+    -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
+
+    -- Metodo de navegacion para ir al directorio padre del archivo actual
+    vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' }),
+  },
+
+  -- NOTE: Instalar LazyGit a travez del Lazyvim
+  -- nvim v0.8.0
+  {
+    'kdheepak/lazygit.nvim',
+    lazy = true,
+    cmd = {
+      'LazyGit',
+      'LazyGitConfig',
+      'LazyGitCurrentFile',
+      'LazyGitFilter',
+      'LazyGitFilterCurrentFile',
+    },
+    -- optional for floating window border decoration
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+    -- setting the keybinding for LazyGit with 'keys' is recommended in
+    -- order to load the plugin when the command is run for the first time
+    keys = {
+      { '<leader>l', '<cmd>LazyGit<cr>', desc = '[L]azyGit' },
+    },
+  },
+
+  -- NOTE: Instalar Copilot Chat con LazyVim
+  {
+    'CopilotC-Nvim/CopilotChat.nvim',
+    dependencies = {
+      { 'github/copilot.vim' }, -- or zbirenbaum/copilot.lua
+      { 'nvim-lua/plenary.nvim', branch = 'master' }, -- for curl, log and async functions
+    },
+    build = 'make tiktoken', -- Only on MacOS or Linux
+    opts = {
+      -- See Configuration section for options
+      question_header = '## User ',
+      answer_header = '## Copilot ',
+      error_header = '## Error ',
+      prompts = {
+        -- Code related prompts
+        Explain = 'Por favor, explica el siguiente código.',
+        Review = 'Por favor, revisa el siguiente código y proporciona comentarios.',
+        Tests = 'Por favor, genera pruebas para el siguiente código.',
+        Refactor = 'Por favor, refactoriza el siguiente código.',
+        FixCode = 'Por favor, corrige el siguiente código.',
+        FixError = 'Por favor, corrige el siguiente error en el código.',
+        BetterNamings = 'Por favor, proporciona mejores nombres para las siguientes variables.',
+        Documentation = 'Por favor, proporciona documentación para el siguiente código.',
+        SwaggerApiDocs = 'Please provide documentation for the following API using Swagger.',
+        SwaggerJsDocs = 'Please write JSDoc for the following API using Swagger.',
+        -- Text related prompts
+        Summarize = 'Please summarize the following text.',
+        Spelling = 'Please correct any grammar and spelling errors in the following text.',
+        Wording = 'Please improve the grammar and wording of the following text.',
+        Concise = 'Please rewrite the following text to make it more concise.',
+      },
+      auto_follow_cursor = true, -- Don't follow the cursor after getting response
+      mappings = {
+        -- Use tab for completion
+        complete = {
+          detail = 'Use @<Tab> or /<Tab> for options.',
+          insert = '<Tab>',
+        },
+        -- Close the chat
+        close = {
+          normal = 'q',
+          insert = '<C-q>',
+        },
+        -- Reset the chat buffer
+        reset = {
+          normal = '<C-x>',
+          insert = '<C-x>',
+        },
+        -- Submit the prompt to Copilot
+        submit_prompt = {
+          normal = '<CR>',
+          insert = '<C-CR>',
+        },
+        -- Accept the diff
+        accept_diff = {
+          normal = '<C-y>',
+          insert = '<C-y>',
+        },
+        -- Yank the diff in the response to register
+        yank_diff = {
+          normal = 'gmy',
+        },
+        -- Show the diff
+        show_diff = {
+          normal = 'gmd',
+        },
+        -- Show the info
+        show_info = {
+          normal = 'gmi',
+        },
+        -- Show the context
+        show_context = {
+          normal = 'gmc',
+        },
+        -- Show help
+        show_help = {
+          normal = 'gmh',
+        },
+      },
+      -- See Commands section for default commands if you want to lazy load on them
+    },
+    keys = {
+      { '<leader>ac', '<cmd>CopilotChat<cr>', mode = { 'n', 'v' }, desc = 'Copilot [C]hat' },
+      { '<leader>ae', '<cmd>CopilotChatExplain<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [E]xplain code' },
+      { '<leader>at', '<cmd>CopilotChatTests<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [G]enerate tests' },
+      { '<leader>ar', '<cmd>CopilotChatReview<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [R]eview code' },
+      { '<leader>aR', '<cmd>CopilotChatRefactor<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [R]efactor code' },
+      { '<leader>an', '<cmd>CopilotChatBetterNamings<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - Better [N]aming' },
+      { '<leader>af', '<cmd>CopilotChatFix<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [F]ix Code' },
+      { '<leader>ao', '<cmd>CopilotChatOptimize<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [O]ptimize Code' },
+      -- {
+      --   '<leader>ccp',
+      --   function()
+      --     local actions = require 'CopilotChat.actions'
+      --     require('CopilotChat.integrations.telescope').pick(actions.prompt_actions())
+      --   end,
+      --   desc = 'CopilotChat - Prompt actions',
+    },
+  },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -270,7 +425,6 @@ require('lazy').setup({
   -- Then, because we use the `config` key, the configuration only runs
   -- after the plugin has been loaded:
   --  config = function() ... end
-
   { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
@@ -280,36 +434,39 @@ require('lazy').setup({
         mappings = vim.g.have_nerd_font,
         -- If you are using a Nerd Font: set icons.keys to an empty table which will use the
         -- default which-key.nvim defined Nerd Font icons, otherwise define a string table
-        keys = vim.g.have_nerd_font and {} or {
-          Up = '<Up> ',
-          Down = '<Down> ',
-          Left = '<Left> ',
-          Right = '<Right> ',
-          C = '<C-…> ',
-          M = '<M-…> ',
-          D = '<D-…> ',
-          S = '<S-…> ',
-          CR = '<CR> ',
-          Esc = '<Esc> ',
-          ScrollWheelDown = '<ScrollWheelDown> ',
-          ScrollWheelUp = '<ScrollWheelUp> ',
-          NL = '<NL> ',
-          BS = '<BS> ',
-          Space = '<Space> ',
-          Tab = '<Tab> ',
-          F1 = '<F1>',
-          F2 = '<F2>',
-          F3 = '<F3>',
-          F4 = '<F4>',
-          F5 = '<F5>',
-          F6 = '<F6>',
-          F7 = '<F7>',
-          F8 = '<F8>',
-          F9 = '<F9>',
-          F10 = '<F10>',
-          F11 = '<F11>',
-          F12 = '<F12>',
-        },
+        -- NOTE: Comenteado para usar los iconos default
+        --
+        -- keys = vim.g.have_nerd_font and {} or {
+        --   Up = '<Up> ',
+        --   Down = '<Down> ',
+        --   Left = '<Left> ',
+        --   Right = '<Right> ',
+        --   C = '<C-…> ',
+        --   M = '<M-…> ',
+        --   D = '<D-…> ',
+        --   S = '<S-…> ',
+        --   CR = '<CR> ',
+        --   Esc = '<Esc> ',
+        --   ScrollWheelDown = '<ScrollWheelDown> ',
+        --   ScrollWheelUp = '<ScrollWheelUp> ',
+        --   NL = '<NL> ',
+        --   BS = '<BS> ',
+        --   Space = '<Space> ',
+        --   Tab = '<Tab> ',
+        --   F1 = '<F1>',
+        --   F2 = '<F2>',
+        --   F3 = '<F3>',
+        --   F4 = '<F4>',
+        --   F5 = '<F5>',
+        --   F6 = '<F6>',
+        --   F7 = '<F7>',
+        --   F8 = '<F8>',
+        --   F9 = '<F9>',
+        --   F10 = '<F10>',
+        --   F11 = '<F11>',
+        --   F12 = '<F12>',
+        -- },
+        keys = {},
       },
 
       -- Document existing key chains
@@ -321,6 +478,8 @@ require('lazy').setup({
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>a', group = 'Copilot Ch[a]t', mode = { 'n', 'v' } },
+        { '<leader>l', group = '[L]azy Git' },
       },
     },
   },
@@ -382,11 +541,12 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          mappings = {
+            -- i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+            i = { ['<C-w>'] = 'delete_buffer' }, -- Borra el buffer seleccionado en la tabla de buffers (Space, Space)
+          },
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -589,14 +749,15 @@ require('lazy').setup({
       })
 
       -- Change diagnostic symbols in the sign column (gutter)
-      -- if vim.g.have_nerd_font then
-      --   local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
-      --   local diagnostic_signs = {}
-      --   for type, icon in pairs(signs) do
-      --     diagnostic_signs[vim.diagnostic.severity[type]] = icon
-      --   end
-      --   vim.diagnostic.config { signs = { text = diagnostic_signs } }
-      -- end
+      -- Configuracion para utilizar los iconoes del nerd font?
+      if vim.g.have_nerd_font then
+        local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
+        local diagnostic_signs = {}
+        for type, icon in pairs(signs) do
+          diagnostic_signs[vim.diagnostic.severity[type]] = icon
+        end
+        vim.diagnostic.config { signs = { text = diagnostic_signs } }
+      end
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -627,6 +788,13 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
+        -- Agregar LSP para trabajar en Frontend
+        ts_ls = {},
+        html = {},
+        cssls = {},
+        prismals = {},
+        jsonls = {},
+        tailwindcss = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -713,7 +881,8 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -738,12 +907,13 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          --    Agregar snippets para diferentes lenguajes y frameworks
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -841,6 +1011,13 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
+    opts = { -- Usado para agregar transparencia al colorscheme.
+      transparent = true, -- Activa la transparencia
+      styles = {
+        sidebars = 'transparent', -- Sidebar transparent"
+        floats = 'transparent', -- Ventanas flotantes transparentes
+      },
+    },
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
@@ -898,7 +1075,26 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'typescript',
+        'css',
+        'http',
+        'json',
+        'sql',
+        'scss',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -928,11 +1124,11 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
@@ -945,25 +1141,25 @@ require('lazy').setup({
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
 }, {
-  ui = {
-    -- If you are using a Nerd Font: set icons to an empty table which will use the
-    -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
-    icons = vim.g.have_nerd_font and {} or {
-      cmd = '⌘',
-      config = '🛠',
-      event = '📅',
-      ft = '📂',
-      init = '⚙',
-      keys = '🗝',
-      plugin = '🔌',
-      runtime = '💻',
-      require = '🌙',
-      source = '📄',
-      start = '🚀',
-      task = '📌',
-      lazy = '💤 ',
-    },
-  },
+  -- ui = {
+  ---- If you are using a Nerd Font: set icons to an empty table which will use the
+  ---- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
+  --  icons = vim.g.have_nerd_font and {} or {
+  --    cmd = '⌘',
+  --    config = '🛠',
+  --    event = '📅',
+  --    ft = '📂',
+  --    init = '⚙',
+  --    keys = '🗝',
+  --    plugin = '🔌',
+  --    runtime = '💻',
+  --    require = '🌙',
+  --    source = '📄',
+  --    start = '🚀',
+  --    task = '📌',
+  --    lazy = '💤 ',
+  --  },
+  -- },
 })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
