@@ -111,7 +111,12 @@ vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
 -- Agregar la funcionalidad de cambiar el directorio dependiendo el archivo que este viendo
-vim.cmd [[autocmd BufEnter * silent! lcd %:p:h]]
+-- vim.cmd [[autocmd BufEnter * silent! lcd %:p:h]]
+
+-- Keymap para hacer "cd" a la ubicacion del archivo actual
+vim.keymap.set('n', '<leader>cd', function()
+  vim.cmd('lcd ' .. vim.fn.expand '%:p:h')
+end, { desc = "Change directory to current file's directory" })
 
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -396,6 +401,15 @@ require('lazy').setup({
       },
       -- See Commands section for default commands if you want to lazy load on them
     },
+
+    -- Configuracion para que el CopilotChat no seleccione todo el buffer por defecto.
+    config = function(_, opts)
+      local chat = require 'CopilotChat'
+      local select = require 'CopilotChat.select'
+      opts.selection = select.visual
+      chat.setup(opts)
+    end,
+
     keys = {
       { '<leader>ac', '<cmd>CopilotChat<cr>', mode = { 'n', 'v' }, desc = 'Copilot [C]hat' },
       { '<leader>ae', '<cmd>CopilotChatExplain<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [E]xplain code' },
@@ -567,6 +581,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<leader>sa', function()
+        require('telescope.builtin').find_files { hidden = true }
+      end, { desc = '[S]earch [A]ll Files (including hidden)' }) -- keymap para ver todos los archivos (ocultos tambien)
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -1128,7 +1145,7 @@ require('lazy').setup({
   --
   -- require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
-  require 'kickstart.plugins.lint',
+  -- require 'kickstart.plugins.lint', -- Este plugin causaba conflicto con el eslint.
   require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
