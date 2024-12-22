@@ -110,6 +110,11 @@ vim.opt.mouse = 'a'
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
+-- tabs & indentation
+vim.opt.tabstop = 2 -- 2 espacios por tab
+vim.opt.shiftwidth = 2 -- 2 espacios por indent width
+vim.opt.autoindent = true -- Copiar el indent de la linea actual
+
 -- Agregar la funcionalidad de cambiar el directorio dependiendo el archivo que este viendo
 -- vim.cmd [[autocmd BufEnter * silent! lcd %:p:h]]
 
@@ -318,6 +323,26 @@ require('lazy').setup({
     keys = {
       { '<leader>l', '<cmd>LazyGit<cr>', desc = '[L]azyGit' },
     },
+  },
+
+  -- Comment Plugin
+  {
+    'numToStr/Comment.nvim',
+    event = { 'BufReadPre', 'BufNewFile' },
+    dependencies = {
+      'JoosepAlviste/nvim-ts-context-commentstring',
+    },
+    config = function()
+      -- import comment plugin safely
+      local comment = require 'Comment'
+      local ts_context_commentstring = require 'ts_context_commentstring.integrations.comment_nvim'
+
+      -- enable comment
+      comment.setup {
+        -- for commenting tsx, jsx, svelte, html files
+        pre_hook = ts_context_commentstring.create_pre_hook(),
+      }
+    end,
   },
 
   -- NOTE: Instalar Copilot Chat con LazyVim
@@ -645,7 +670,17 @@ require('lazy').setup({
       { 'j-hui/fidget.nvim', opts = {} },
 
       -- Allows extra capabilities provided by nvim-cmp
-      'hrsh7th/cmp-nvim-lsp',
+      -- 'hrsh7th/cmp-nvim-lsp',
+      {
+        'hrsh7th/cmp-nvim-lsp',
+        opts = {
+          on_attach = function(client)
+            client.server_capabilities.completionProvider = false
+          end,
+        },
+      },
+      { 'antosha417/nvim-lsp-file-operations', config = true },
+      -- { 'folke/neodev.vim', opts = {} },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -810,6 +845,12 @@ require('lazy').setup({
         --
         -- Agregar LSP para trabajar en Frontend
         ts_ls = {},
+        -- Configuracion para que los snippets de emmet no funcionen
+        emmet_ls = {
+          on_attach = function(client)
+            client.server_capabilities.completionProvider = false
+          end,
+        },
         html = {},
         cssls = {},
         prismals = {},
@@ -861,6 +902,15 @@ require('lazy').setup({
             require('lspconfig')[server_name].setup(server)
           end,
         },
+        ensure_installed = {
+          'ts_ls',
+          'html',
+          'cssls',
+          'tailwindcss',
+          'lua_ls',
+          'graphql',
+          'prismals',
+        },
       }
     end,
   },
@@ -904,7 +954,13 @@ require('lazy').setup({
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        html = { 'prettier' },
+        css = { 'prettier' },
+        json = { 'prettier' },
+        markdown = { 'prettier' },
       },
     },
   },
@@ -1018,11 +1074,26 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-          { name = 'path' },
+          { name = 'nvim_lsp', keyword_length = 3, max_item_count = 5 },
+          { name = 'luasnip', keyword_length = 3, max_item_count = 5 },
+          { name = 'path', keyword_length = 3, max_item_count = 5 },
         },
       }
+    end,
+  },
+
+  -- Plugin para cerrar los tags de html
+  {
+    'windwp/nvim-ts-autotag',
+    ft = {
+      'javascript',
+      'javascriptreact',
+      'typescript',
+      'typescriptreact',
+      'html',
+    },
+    config = function()
+      require('nvim-ts-autotag').setup()
     end,
   },
 
@@ -1111,6 +1182,7 @@ require('lazy').setup({
         'vimdoc',
         'javascript',
         'typescript',
+        'tsx',
         'css',
         'http',
         'json',
@@ -1149,7 +1221,7 @@ require('lazy').setup({
   require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint', -- Este plugin causaba conflicto con el eslint.
   require 'kickstart.plugins.autopairs',
-  require 'kickstart.plugins.neo-tree',
+  -- require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
