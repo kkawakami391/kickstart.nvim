@@ -325,7 +325,7 @@ require('lazy').setup({
     },
   },
 
-  -- Comment Plugin
+  -- Plugin para commentear codigo con acceso rapido
   {
     'numToStr/Comment.nvim',
     event = { 'BufReadPre', 'BufNewFile' },
@@ -671,6 +671,7 @@ require('lazy').setup({
 
       -- Allows extra capabilities provided by nvim-cmp
       -- 'hrsh7th/cmp-nvim-lsp',
+      -- ↓ Nueva configuracion del cmp-nvim-lsp para que no muestre muchas sugerencias
       {
         'hrsh7th/cmp-nvim-lsp',
         opts = {
@@ -680,6 +681,8 @@ require('lazy').setup({
         },
       },
       { 'antosha417/nvim-lsp-file-operations', config = true },
+
+      -- ↓ Plugin que daba error en el inicio de nvim
       -- { 'folke/neodev.vim', opts = {} },
     },
     config = function()
@@ -845,7 +848,7 @@ require('lazy').setup({
         --
         -- Agregar LSP para trabajar en Frontend
         ts_ls = {},
-        -- Configuracion para que los snippets de emmet no funcionen
+        -- Configuracion para que los snippets de emmet no funcionen(No se si esta funcionando)
         emmet_ls = {
           on_attach = function(client)
             client.server_capabilities.completionProvider = false
@@ -856,6 +859,7 @@ require('lazy').setup({
         prismals = {},
         jsonls = {},
         tailwindcss = {},
+        jdtls = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -888,6 +892,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'prettier',
         'prettierd',
+        'google-java-format',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -910,6 +915,7 @@ require('lazy').setup({
           'lua_ls',
           'graphql',
           'prismals',
+          'jdtls',
         },
       }
     end,
@@ -961,6 +967,7 @@ require('lazy').setup({
         css = { 'prettier' },
         json = { 'prettier' },
         markdown = { 'prettier' },
+        jdtls = { 'google-java-format' },
       },
     },
   },
@@ -1074,6 +1081,7 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
+          -- Configuraciones para limitar las sugerencias en el codigo
           { name = 'nvim_lsp', keyword_length = 3, max_item_count = 5 },
           { name = 'luasnip', keyword_length = 3, max_item_count = 5 },
           { name = 'path', keyword_length = 3, max_item_count = 5 },
