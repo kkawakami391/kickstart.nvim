@@ -110,18 +110,8 @@ vim.opt.mouse = 'a'
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
--- tabs & indentation
-vim.opt.tabstop = 2 -- 2 espacios por tab
-vim.opt.shiftwidth = 2 -- 2 espacios por indent width
-vim.opt.autoindent = true -- Copiar el indent de la linea actual
-
 -- Agregar la funcionalidad de cambiar el directorio dependiendo el archivo que este viendo
 -- vim.cmd [[autocmd BufEnter * silent! lcd %:p:h]]
-
--- Keymap para hacer "cd" a la ubicacion del archivo actual
-vim.keymap.set('n', '<leader>cd', function()
-  vim.cmd('lcd ' .. vim.fn.expand '%:p:h')
-end, { desc = "Change directory to current file's directory" })
 
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -325,24 +315,13 @@ require('lazy').setup({
     },
   },
 
-  -- Plugin para commentear codigo con acceso rapido
   {
-    'numToStr/Comment.nvim',
-    event = { 'BufReadPre', 'BufNewFile' },
-    dependencies = {
-      'JoosepAlviste/nvim-ts-context-commentstring',
-    },
+    'windwp/nvim-ts-autotag',
+    opts = {},
     config = function()
-      -- import comment plugin safely
-      local comment = require 'Comment'
-      local ts_context_commentstring = require 'ts_context_commentstring.integrations.comment_nvim'
-
-      -- enable comment
-      comment.setup {
-        -- for commenting tsx, jsx, svelte, html files
-        pre_hook = ts_context_commentstring.create_pre_hook(),
-      }
+      require('nvim-ts-autotag').setup()
     end,
+    ft = { 'html', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'tsx', 'jsx' },
   },
 
   -- NOTE: Instalar Copilot Chat con LazyVim
@@ -426,15 +405,12 @@ require('lazy').setup({
       },
       -- See Commands section for default commands if you want to lazy load on them
     },
-
-    -- Configuracion para que el CopilotChat no seleccione todo el buffer por defecto.
     config = function(_, opts)
       local chat = require 'CopilotChat'
       local select = require 'CopilotChat.select'
       opts.selection = select.visual
       chat.setup(opts)
     end,
-
     keys = {
       { '<leader>ac', '<cmd>CopilotChat<cr>', mode = { 'n', 'v' }, desc = 'Copilot [C]hat' },
       { '<leader>ae', '<cmd>CopilotChatExplain<cr>', mode = { 'n', 'v' }, desc = 'CopilotChat - [E]xplain code' },
@@ -608,7 +584,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>sa', function()
         require('telescope.builtin').find_files { hidden = true }
-      end, { desc = '[S]earch [A]ll Files (including hidden)' }) -- keymap para ver todos los archivos (ocultos tambien)
+      end, { desc = '[S]earch [A]ll Files (including hidden)' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -661,7 +637,9 @@ require('lazy').setup({
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
-      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      -- Mason must be loaded before its dependents so we need to set it up here.
+      -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
+      { 'williamboman/mason.nvim', opts = {} },
       'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
@@ -670,20 +648,7 @@ require('lazy').setup({
       { 'j-hui/fidget.nvim', opts = {} },
 
       -- Allows extra capabilities provided by nvim-cmp
-      -- 'hrsh7th/cmp-nvim-lsp',
-      -- ↓ Nueva configuracion del cmp-nvim-lsp para que no muestre muchas sugerencias
-      {
-        'hrsh7th/cmp-nvim-lsp',
-        opts = {
-          on_attach = function(client)
-            client.server_capabilities.completionProvider = false
-          end,
-        },
-      },
-      { 'antosha417/nvim-lsp-file-operations', config = true },
-
-      -- ↓ Plugin que daba error en el inicio de nvim
-      -- { 'folke/neodev.vim', opts = {} },
+      'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -848,18 +813,11 @@ require('lazy').setup({
         --
         -- Agregar LSP para trabajar en Frontend
         ts_ls = {},
-        -- Configuracion para que los snippets de emmet no funcionen(No se si esta funcionando)
-        emmet_ls = {
-          on_attach = function(client)
-            client.server_capabilities.completionProvider = false
-          end,
-        },
         html = {},
         cssls = {},
         prismals = {},
         jsonls = {},
         tailwindcss = {},
-        jdtls = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -883,16 +841,12 @@ require('lazy').setup({
       --    :Mason
       --
       --  You can press `g?` for help in this menu.
-      require('mason').setup()
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
-        'prettier',
-        'prettierd',
-        'google-java-format',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -906,16 +860,6 @@ require('lazy').setup({
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
-        },
-        ensure_installed = {
-          'ts_ls',
-          'html',
-          'cssls',
-          'tailwindcss',
-          'lua_ls',
-          'graphql',
-          'prismals',
-          'jdtls',
         },
       }
     end,
@@ -960,14 +904,8 @@ require('lazy').setup({
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
-        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
-        html = { 'prettier' },
-        css = { 'prettier' },
-        json = { 'prettier' },
-        markdown = { 'prettier' },
-        jdtls = { 'google-java-format' },
       },
     },
   },
@@ -1081,27 +1019,11 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
-          -- Configuraciones para limitar las sugerencias en el codigo
-          { name = 'nvim_lsp', keyword_length = 3, max_item_count = 5 },
-          { name = 'luasnip', keyword_length = 3, max_item_count = 5 },
-          { name = 'path', keyword_length = 3, max_item_count = 5 },
+          { name = 'nvim_lsp' },
+          { name = 'luasnip' },
+          { name = 'path' },
         },
       }
-    end,
-  },
-
-  -- Plugin para cerrar los tags de html
-  {
-    'windwp/nvim-ts-autotag',
-    ft = {
-      'javascript',
-      'javascriptreact',
-      'typescript',
-      'typescriptreact',
-      'html',
-    },
-    config = function()
-      require('nvim-ts-autotag').setup()
     end,
   },
 
@@ -1190,7 +1112,6 @@ require('lazy').setup({
         'vimdoc',
         'javascript',
         'typescript',
-        'tsx',
         'css',
         'http',
         'json',
@@ -1227,9 +1148,9 @@ require('lazy').setup({
   --
   -- require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint', -- Este plugin causaba conflicto con el eslint.
+  -- require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
