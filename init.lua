@@ -348,7 +348,17 @@ require('lazy').setup({
     -- setting the keybinding for LazyGit with 'keys' is recommended in
     -- order to load the plugin when the command is run for the first time
     keys = {
-      { '<leader>l', '<cmd>LazyGitCurrentFile<cr>', desc = '[L]azyGit' },
+      {
+        '<leader>l',
+        function()
+          if vim.bo.filetype == 'oil' then
+            vim.cmd 'LazyGit'
+          else
+            vim.cmd 'LazyGitCurrentFile'
+          end
+        end,
+        desc = '[L]azyGit',
+      },
     },
   },
 
