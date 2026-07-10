@@ -296,6 +296,39 @@ require('lazy').setup({
     vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' }),
   },
 
+  -- Database management with Dadbod
+  {
+    'tpope/vim-dadbod',
+    dependencies = {
+      'kristijanhusak/vim-dadbod-ui',
+      'kristijanhusak/vim-dadbod-completion',
+    },
+    cmd = { 'DB', 'DBUI' }, -- Lazy load on these commands
+    keys = {
+      { '<leader>db', '<cmd>DBUIToggle<CR>', desc = 'Toggle [D]ata[B]ase UI' },
+    },
+    config = function()
+      -- Configuración básica para guardar resultados y conexiones
+      vim.g.db_ui_save_location = vim.fn.stdpath 'data' .. '/dadbod_ui'
+      vim.g.db_ui_tmp_query_location = vim.fn.stdpath 'data' .. '/dadbod_ui/tmp'
+      vim.g.db_ui_use_nerd_fonts = 1 -- Usa iconos ya que tienes Nerd Font
+
+      -- Autocompletado para archivos SQL
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = { 'sql', 'mysql', 'plsql' },
+        callback = function()
+          require('cmp').setup.buffer {
+            sources = {
+              { name = 'vim-dadbod-completion' },
+              { name = 'luasnip' },
+              { name = 'buffer' },
+            },
+          }
+        end,
+      })
+    end,
+  },
+
   -- NOTE: Instalar LazyGit a travez del Lazyvim
   -- nvim v0.8.0
   {
@@ -315,7 +348,7 @@ require('lazy').setup({
     -- setting the keybinding for LazyGit with 'keys' is recommended in
     -- order to load the plugin when the command is run for the first time
     keys = {
-      { '<leader>l', '<cmd>LazyGit<cr>', desc = '[L]azyGit' },
+      { '<leader>l', '<cmd>LazyGitCurrentFile<cr>', desc = '[L]azyGit' },
     },
   },
 
@@ -338,10 +371,13 @@ require('lazy').setup({
     build = 'make tiktoken', -- Only on MacOS or Linux
     opts = {
       model = 'claude-sonnet-4.6',
+      highlight_headers = true,
+      separator = '---',
+      error_header = '> [!ERROR] Error',
       -- See Configuration section for options
       question_header = '## User ',
       answer_header = '## Copilot ',
-      error_header = '## Error ',
+      -- error_header = '## Error ',
       prompts = {
         -- Code related prompts
         Explain = 'Por favor, explica el siguiente código.',
@@ -496,7 +532,7 @@ require('lazy').setup({
       spec = {
         { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
         { '<leader>d', group = '[D]ocument' },
-        { '<leader>r', group = '[R]ename' },
+        { '<leader>r', group = '[R]eferences' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
@@ -517,7 +553,7 @@ require('lazy').setup({
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
-    branch = '0.1.x',
+    -- branch = '0.1.x',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -567,10 +603,17 @@ require('lazy').setup({
         defaults = {
           mappings = {
             -- i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-            i = { ['<C-w>'] = 'delete_buffer' }, -- Borra el buffer seleccionado en la tabla de buffers (Space, Space)
           },
         },
-        -- pickers = {}
+        pickers = {
+          -- Mapear <C-w> a delete_buffer solo en el picker de buffers (Space, Space)
+          buffers = {
+            mappings = {
+              i = { ['<C-w>'] = 'delete_buffer' },
+            },
+          },
+        },
+        -- pickers extra (no borrar este comentario para no romper la seccion)
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -588,7 +631,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>sa', function()
-        require('telescope.builtin').find_files { hidden = true }
+        require('telescope.builtin').find_files { hidden = true, no_ignore = true }
       end, { desc = '[S]earch [A]ll Files (including hidden)' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
@@ -620,6 +663,15 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      -- Patch telescope's treesitter previewer to use the new built-in API.
+      -- The old nvim-treesitter.parsers.ft_to_lang / configs.is_enabled APIs
+      -- were removed in nvim-treesitter's main branch.
+      local preview_utils = require 'telescope.previewers.utils'
+      preview_utils.ts_highlighter = function(bufnr, ft)
+        local lang = vim.treesitter.language.get_lang(ft) or ft
+        return pcall(vim.treesitter.start, bufnr, lang)
+      end
     end,
   },
 
@@ -705,10 +757,12 @@ require('lazy').setup({
 
           -- Find references for the word under your cursor.
           map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+          map('<leader>r', require('telescope.builtin').lsp_references, 'Go to [R]eferences')
 
           -- Jump to the implementation of the word under your cursor.
           --  Useful when your language has ways of declaring types without an actual implementation.
           map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+          map('<leader>i', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
 
           -- Jump to the type of the word under your cursor.
           --  Useful when you're not sure what type a variable is and you want to see
@@ -725,7 +779,7 @@ require('lazy').setup({
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('<leader>n', vim.lsp.buf.rename, 'Re[n]ame')
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
@@ -1061,6 +1115,17 @@ require('lazy').setup({
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
+  {
+    'MeanderingProgrammer/render-markdown.nvim',
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+    },
+    opts = {
+      file_types = { 'markdown', 'copilot-chat' },
+    },
+    ft = { 'markdown', 'copilot-chat' },
+  },
+
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
@@ -1100,45 +1165,31 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'main',
+    lazy = false, -- main branch does not support lazy-loading
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = {
-        'bash',
-        'c',
-        'diff',
-        'html',
-        'lua',
-        'luadoc',
-        'markdown',
-        'markdown_inline',
-        'query',
-        'vim',
-        'vimdoc',
-        'javascript',
-        'typescript',
-        'css',
-        'http',
-        'json',
-        'sql',
-        'scss',
-      },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
+    config = function()
+      -- which is NOT on the runtimepath by default. We add it here so that
+      -- vim.treesitter.start() can find highlight queries for all languages.
+      local plugin_dir = vim.fn.stdpath 'data' .. '/lazy/nvim-treesitter'
+      if vim.fn.isdirectory(plugin_dir .. '/runtime') == 1 then
+        vim.opt.rtp:prepend(plugin_dir .. '/runtime')
+      end
+      -- Enable built-in treesitter highlighting for every filetype that has a parser.
+      -- Ruby intentionally excluded: it relies on vim's regex highlighting for correct indent.
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = '*',
+        callback = function(ev)
+          if vim.bo[ev.buf].filetype ~= 'ruby' then
+            pcall(vim.treesitter.start, ev.buf)
+          end
+        end,
+      })
+    end,
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
     --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
