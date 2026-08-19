@@ -917,7 +917,10 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
       })
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      require('mason-tool-installer').setup {
+        ensure_installed = ensure_installed,
+        auto_update = true,
+      }
 
       require('mason-lspconfig').setup {
         handlers = {
@@ -975,6 +978,7 @@ require('lazy').setup({
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        sql = { 'pg_format' },
       },
     },
   },
@@ -1154,25 +1158,38 @@ require('lazy').setup({
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
 
-      -- Simple and easy statusline.
-      --  You could remove this setup call if you don't like it,
-      --  and try some other statusline plugin
-      local statusline = require 'mini.statusline'
-      -- set use_icons to true if you have a Nerd Font
-      statusline.setup { use_icons = vim.g.have_nerd_font }
-
-      -- You can configure sections in the statusline by overriding their
-      -- default behavior. For example, here we set the section for
-      -- cursor location to LINE:COLUMN
-      ---@diagnostic disable-next-line: duplicate-set-field
-      statusline.section_location = function()
-        return '%2l:%-2v'
-      end
-
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+
+  { -- Statusline
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('lualine').setup {
+        options = {
+          theme = 'tokyonight',
+          component_separators = { left = '\u{e0be}', right = '/' },
+          section_separators = { left = '\u{e0bc}', right = '' },
+        },
+        sections = {
+          lualine_a = {
+            {
+              'mode',
+              icon = { '\u{e62b}', align = 'left' },
+            },
+          },
+          lualine_b = { 'branch', 'diagnostics' },
+          lualine_c = { { 'filename', path = 1 } },
+          lualine_x = { 'diff', 'fileformat', 'filetype' },
+          lualine_y = { 'progress' },
+          lualine_z = { 'location' },
+        },
+      }
+    end,
+  },
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     branch = 'main',
@@ -1207,6 +1224,52 @@ require('lazy').setup({
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
+
+  -- NOTE: smear-cursor.nvim - Animated cursor smear effect
+  -- {
+  --   'sphamba/smear-cursor.nvim',
+  --   opts = {                                -- Default  Range
+  --     stiffness = 0.8,                      -- 0.6      [0, 1]
+  --     trailing_stiffness = 0.6,             -- 0.45     [0, 1]
+  --     stiffness_insert_mode = 0.7,          -- 0.5      [0, 1]
+  --     trailing_stiffness_insert_mode = 0.7, -- 0.5      [0, 1]
+  --     damping = 0.95,                       -- 0.85     [0, 1]
+  --     damping_insert_mode = 0.95,           -- 0.9      [0, 1]
+  --     distance_stop_animating = 0.5,        -- 0.1      > 0
+  --   },
+  -- },
+
+  -- NOTE: opencode.nvim - Neovim integration with OpenCode AI
+  {
+    'nickjvandyke/opencode.nvim',
+    version = '*', -- Latest stable release
+    config = function()
+      ---@type opencode.Opts
+      vim.g.opencode_opts = {
+        -- Your configuration, if any; goto definition on the type for details
+      }
+
+      -- Recommended keymaps
+      vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
+        require('opencode').ask '@this: '
+      end, { desc = '[O]penCode [A]sk' })
+      vim.keymap.set({ 'n', 'x' }, '<leader>os', function()
+        require('opencode').select()
+      end, { desc = '[O]penCode [S]elect' })
+      vim.keymap.set({ 'n', 'x' }, 'go', function()
+        return require('opencode').operator '@this '
+      end, { desc = 'Append range to OpenCode', expr = true })
+      vim.keymap.set({ 'n' }, 'goo', function()
+        return require('opencode').operator '@this ' .. '_'
+      end, { desc = 'Append line to OpenCode', expr = true })
+      vim.keymap.set({ 'n' }, '<S-C-u>', function()
+        require('opencode').command 'session.half.page.up'
+      end, { desc = 'Scroll OpenCode up' })
+      vim.keymap.set({ 'n' }, '<S-C-d>', function()
+        require('opencode').command 'session.half.page.down'
+      end, { desc = 'Scroll OpenCode down' })
+    end,
+  },
 
   -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
   --
