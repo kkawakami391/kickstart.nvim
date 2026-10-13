@@ -55,6 +55,37 @@ return {
         -- Toggles
         map('n', '<leader>tb', gitsigns.toggle_current_line_blame, { desc = '[T]oggle git show [b]lame line' })
         map('n', '<leader>tD', gitsigns.toggle_deleted, { desc = '[T]oggle git show [D]eleted' })
+        -- ✅ Close diff: switch back to original buffer
+        map('n', '<Esc>', function()
+          if vim.wo.diff or vim.startswith(vim.api.nvim_buf_get_name(0), 'gitsigns://') then
+            -- Buscar el buffer original (no gitsigns://)
+            local original_buf = nil
+            for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+              local name = vim.api.nvim_buf_get_name(buf)
+              if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buflisted and not name:match '^gitsigns://' and buf ~= vim.api.nvim_get_current_buf() then
+                original_buf = buf
+                break
+              end
+            end
+
+            if original_buf then
+              vim.api.nvim_set_current_buf(original_buf)
+            else
+              -- Fallback: si no encontramos el original, recargar
+              vim.cmd 'edit!'
+            end
+
+            -- Limpiar buffer gitsigns huérfano
+            for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+              local name = vim.api.nvim_buf_get_name(buf)
+              if name:match '^gitsigns://' and not vim.api.nvim_buf_is_loaded(buf) == false then
+                pcall(vim.api.nvim_buf_delete, buf, { force = true })
+              end
+            end
+          else
+            vim.cmd.normal { '<Esc>', bang = true }
+          end
+        end, { desc = 'Close diff view or normal Esc' })
       end,
     },
   },
