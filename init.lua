@@ -179,6 +179,14 @@ vim.opt.scrolloff = 10
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
+-- Move up/down by screen lines (visual lines) instead of logical lines
+-- vim.keymap.set('n', 'j', 'gj', { desc = 'Move down by screen line' })
+-- vim.keymap.set('n', 'k', 'gk', { desc = 'Move up by screen line' })
+--
+-- Move up/down by screen lines (visual lines) instead of logical lines, but when using with counts moves by physical lines.
+vim.keymap.set({ 'n', 'x' }, 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, desc = 'Down: visual line, or physical line with count' })
+vim.keymap.set({ 'n', 'x' }, 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, desc = 'Up: visual line, or physical line with count' })
+
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -304,6 +312,7 @@ require('lazy').setup({
       'kristijanhusak/vim-dadbod-completion',
     },
     cmd = { 'DB', 'DBUI' }, -- Lazy load on these commands
+    ft = { 'sql', 'mysql', 'plsql' }, -- Setting para que funcione en archivos .sql tambien
     keys = {
       { '<leader>db', '<cmd>DBUIToggle<CR>', desc = 'Toggle [D]ata[B]ase UI' },
     },
@@ -541,7 +550,7 @@ require('lazy').setup({
       -- Document existing key chains
       spec = {
         { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
-        { '<leader>d', group = '[D]ocument' },
+        { '<leader>d', group = '[D]ocument | [D]atabase' },
         { '<leader>r', group = '[R]eferences' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
